@@ -181,7 +181,7 @@ func (p *RequirementsProvider) processSelector(ctx context.Context, resourceKey 
 		return resources, newlyFetched, nil
 
 	case selector.GetMatchLabels() != nil:
-		resources, err := p.processLabelSelector(ctx, selector, gvk, xrNamespace)
+		resources, err := p.processLabelSelector(ctx, selector, gvk)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "cannot get resources by label")
 		}
@@ -208,7 +208,7 @@ func parseVersionFromAPIVersion(apiVersion string) string {
 }
 
 // resolveNamespace determines the appropriate namespace for a resource based on its scope and selector.
-func (p *RequirementsProvider) resolveNamespace(ctx context.Context, gvk schema.GroupVersionKind, selector *v1.ResourceSelector, xrNamespace string) (string, error) {
+func (p *RequirementsProvider) resolveNamespace(ctx context.Context, gvk schema.GroupVersionKind, selector *v1.ResourceSelector, defaultNamespace string) (string, error) {
 	isNamespaced, err := p.client.IsNamespacedResource(ctx, gvk)
 	if err != nil {
 		return "", errors.Wrapf(err, "cannot determine namespace scope for resource %s", gvk.String())
@@ -222,7 +222,7 @@ func (p *RequirementsProvider) resolveNamespace(ctx context.Context, gvk schema.
 		return selector.GetNamespace(), nil
 	}
 
-	return xrNamespace, nil
+	return defaultNamespace, nil
 }
 
 // processNameSelector handles resource selection by name.
@@ -278,13 +278,13 @@ func (p *RequirementsProvider) processNameSelector(ctx context.Context, selector
 }
 
 // processLabelSelector handles resource selection by labels.
-func (p *RequirementsProvider) processLabelSelector(ctx context.Context, selector *v1.ResourceSelector, gvk schema.GroupVersionKind, xrNamespace string) ([]*un.Unstructured, error) {
+func (p *RequirementsProvider) processLabelSelector(ctx context.Context, selector *v1.ResourceSelector, gvk schema.GroupVersionKind) ([]*un.Unstructured, error) {
 	labelSelector := metav1.LabelSelector{
 		MatchLabels: selector.GetMatchLabels().GetLabels(),
 	}
 
-	// Resolve namespace
-	ns, err := p.resolveNamespace(ctx, gvk, selector, xrNamespace)
+	// An empty namespace lists a namespaced kind across all namespaces.
+	ns, err := p.resolveNamespace(ctx, gvk, selector, "")
 	if err != nil {
 		return nil, err
 	}

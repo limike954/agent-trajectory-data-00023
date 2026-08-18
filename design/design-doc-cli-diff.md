@@ -686,7 +686,9 @@ concrete struct (not an interface) and is owned by the XR processor.
 The `RequirementsProvider` handles:
 
 - Caching frequently used resources to avoid re-fetching across the iterative render loop
-- Fetching resources by name or label selector, scoped to the XR's namespace where appropriate
+- Fetching resources by name in the selector's explicit namespace or, when omitted, the XR's namespace
+- Fetching resources by label in the selector's explicit namespace or, when omitted, across all namespaces
+- Omitting namespaces for cluster-scoped kinds regardless of selector input
 - Loading EnvironmentConfigs as a baseline available to every render
 
 **Unmet requirements are non-fatal.** A `matchName` selector that resolves to a NotFound (the referenced resource
